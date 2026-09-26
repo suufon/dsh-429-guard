@@ -1,0 +1,51 @@
+{
+  "name": "dsh-429-guard",
+  "description": "DeepSeek Harness 429 守卫：Web UI 右上角精美弹窗 + 开关，开启后遇到 429 / 配额不足(insufficient_quota) 错误无限次自动重试，避免任务中断。",
+  "version": "0.1.0",
+  "type": "module",
+  "author": "suufon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suufon/dsh-429-guard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/suufon/dsh-429-guard/issues"
+  },
+  "homepage": "https://github.com/suufon/dsh-429-guard#readme",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "429",
+    "retry",
+    "rate-limit",
+    "quota"
+  ],
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ]
+    }
+  },
+  "files": [
+    "cordis.patch.yml",
+    "lib/index.js",
+    "lib/client.js"
+  ],
+  "license": "MIT"
+}

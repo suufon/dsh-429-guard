@@ -1,0 +1,8 @@
+# dsh-429-guard bundle patch: contributes one profile row.
+# 主机半（lib/index.js）注册 /guard-api 路由 + 监听 agent/request-error
+# 事件实现 429/配额错误的无限重试；浏览器半（lib/client.js）通过
+# exports["./client"] 与 package.json 的 dsh.client 声明加载。
+
+- insert:
+    - id: dsh-429-guard
+      name: 'dsh-429-guard'
