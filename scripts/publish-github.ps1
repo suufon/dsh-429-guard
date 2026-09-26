@@ -152,7 +152,15 @@ Ok '推送成功'
 
 # ── 4. topics（被 dsh-plugin 生态收录的关键）──────────────────────────
 Info '设置 topics'
-$topics = @('dsh', 'deepseek-harness', 'dsh-plugin', 'dsh-plugins', 'plugin', '429', 'retry', 'rate-limit', 'quota')
+# 通用 DSH topics + package.json 的 keywords，按 GitHub 规则清洗
+# （小写、仅字母数字与连字符）、去重、最多 20 个。这样每个插件自动带上
+# 自己的特征词，脚本里不必硬编码某一个插件的专属标签。
+$stdTopics = @('dsh', 'deepseek-harness', 'dsh-plugin', 'dsh-plugins', 'plugin')
+$kwTopics = @()
+if ($pkg.keywords) {
+  $kwTopics = @($pkg.keywords) | ForEach-Object { ([string]$_).ToLower() -replace '[^a-z0-9-]', '-' }
+}
+$topics = @($stdTopics + $kwTopics) | Where-Object { $_ } | Select-Object -Unique | Select-Object -First 20
 $body = @{ names = $topics } | ConvertTo-Json -Compress
 $body | gh api -X PUT "repos/$Owner/$Repo/topics" --input - *> $null
 if ($LASTEXITCODE -eq 0) { Ok ($topics -join ', ') } else { Write-Host "[warn] topics 设置失败（不影响安装）" -ForegroundColor Yellow }
