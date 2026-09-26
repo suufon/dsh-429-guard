@@ -19,7 +19,7 @@
    GitHub 账号；不指定则自动用 gh 当前登录的账号
 
 .PARAMETER Repo
-   仓库名，默认 dsh-429-guard
+   仓库名；不指定则自动用 package.json 的 name
 
 .PARAMETER Tag
    Release 标签，默认 v<package.json 的 version>
@@ -42,7 +42,7 @@
 # UTF-8 当 ANSI(GBK) 读取，导致下面的中文报 Unexpected token 解析错误。
 param(
   [string]$Owner,
-  [string]$Repo = 'dsh-429-guard',
+  [string]$Repo,
   [string]$Tag,
   [ValidateSet('https', 'ssh')][string]$Transport = 'https',
   [ValidateSet('public', 'private')][string]$Visibility = 'public',
@@ -64,6 +64,7 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Fail '未找到 gh（
 
 if (-not (Test-Path '.\package.json')) { Fail "当前目录没有 package.json。请在插件根目录运行本脚本（当前：$(Get-Location)）。" }
 $pkg = Get-Content '.\package.json' -Raw -Encoding UTF8 | ConvertFrom-Json
+if (-not $Repo) { $Repo = $pkg.name }
 if ($pkg.name -ne $Repo) { Write-Host "[warn] package.json 的 name 是 '$($pkg.name)'，与仓库名 '$Repo' 不一致（一般应相同）。" -ForegroundColor Yellow }
 if (-not $pkg.dsh.bundle.patch) { Fail 'package.json 缺少 dsh.bundle.patch —— 这不是可安装的 DSH 插件，先补上再发布。' }
 
