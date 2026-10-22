@@ -1,7 +1,7 @@
 {
   "name": "dsh-429-guard",
   "description": "DeepSeek Harness 429 守卫：Web UI 右上角精美弹窗 + 开关，开启后遇到 429 / 配额不足(insufficient_quota) 错误无限次自动重试，避免任务中断。",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "author": "suufon",
   "repository": {
