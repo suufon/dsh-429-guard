@@ -4,6 +4,50 @@ DeepSeek Harness（DSH）插件 —— **429 / 配额不足错误自动无限重
 
 在 DSH Web UI 右上角挂一个精美浮窗（盾牌入口胶囊 + 展开卡片），带开关。开启后，模型请求遇到 429（含 DeepSeek 返回的 `429 insufficient_quota`，被官方归类为 `QUOTA`）会**自动无限次重试**，直至成功或你手动停止，避免任务中断。
 
+## ⚠ v0.1.1 修复：会话日志被写坏（重要）
+
+v0.1.0 会向会话日志写入自定义事件类型：
+
+```js
+session.append('429-guard/retry', { ... })
+session.append('429-guard/give-up', { ... })
+```
+
+DSH 的读取路径对未知事件类型是 **fail-closed** 的：
+
+```js
+if (!KNOWN_SESSION_EVENT_TYPES.has(event.type) && event.ignorable !== true)
+    throw unsupported(`session "..." contains event type "${event.type}" ... refusing to interpret the log`)
+```
+
+而 live 的 `Session.append()` **无法**设置 `ignorable: true` 标记。因此只要一个会话写过该事件，
+**下次打开时整份日志都会被拒绝解释**，表现为：
+
+```
+历史加载失败：failed to observe session "session-xxx": contains event type "429-guard/retry" (seq 2020)
+unknown to this harness and not marked ignorable; refusing to interpret the log
+```
+
+日志文件本身没有损坏，但引擎不会去读它 —— 该会话的历史从此打不开。
+
+DSH 官方插件编写指南也明确禁止这种写法：
+
+> Do not append session events with a new `type`. ... Derive state from existing events,
+> or keep plugin-owned data in a storage service found through inspection.
+
+**v0.1.1 的修复：**
+
+1. **不再写入任何自定义事件类型。** 重试决策与统计全部留在插件自己的 storage
+   （`$(DSH_HOME)/storages/dsh-429-guard.json`）。
+2. 需要在会话轨迹里留痕时，改用引擎**已知的** `llm/retry` / `llm/retry-started`
+   事件类型（与官方 `dsh-llm-retry` 同形），任何版本的 DSH 都能正确解释。
+   该行为由浮窗里的「记入会话日志」开关控制，**默认关闭**。
+3. 放弃重试（逃生阀触发）时同样只更新统计，不再写自定义事件。
+
+已经受影响、无法打开的会话，可以用
+[`dsh-session-repair`](https://github.com/Zn-Dk/dsh-session-repair) 的「会话体检」功能离线修复，
+或手动把那些事件标记为 `ignorable: true`。
+
 ## 它解决什么问题
 
 使用 DSH 时，模型 API 经常返回：
@@ -22,6 +66,7 @@ DeepSeek Harness（DSH）插件 —— **429 / 配额不足错误自动无限重
 - **与官方 llm-retry 兼容共存**：waterfall 链中排在官方之后接管，不冲突；若 provider 配了 `always` 模式，官方自身已无限重试，本插件不被触发。
 - **可取消**：退避等待监听 agent 的 abort signal，用户手动停止时立即放弃。
 - **统计持久化**：累计重试次数、最近拦截时间、最近错误，存于 `$(DSH_HOME)/storages/dsh-429-guard.json`。
+- **不写坏会话日志**：只使用引擎已知的事件类型，见上文 v0.1.1 修复说明。
 
 ## 安装
 
